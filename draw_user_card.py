@@ -201,199 +201,109 @@ def draw_user_card(mid):
     nameplate_path = None
 
     for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-
         if os.path.exists(f"img/{mid}_nameplate{ext}"):
-
             nameplate_path = f"img/{mid}_nameplate{ext}"
-
             break
 
-    
-
     # 创建一个列表来存储需要显示的图片
-
     images_to_show = []
 
-    
-
     # 添加勋章图片到列表
-
     if nameplate_path:
-
         try:
-
             nameplate = Image.open(nameplate_path)
-
             # 确保勋章是RGBA模式以保留透明度
-
             if nameplate.mode != 'RGBA':
-
                 nameplate = nameplate.convert('RGBA')
-
             # 调整勋章图片大小
-
             nameplate_size = 100
-
             nameplate = nameplate.resize((nameplate_size, nameplate_size), Image.LANCZOS)
-
             images_to_show.append(('nameplate', nameplate))
-
         except Exception as e:
-
             print(f"加载勋章图片失败: {e}")
 
 
-
     # 加载并添加头像到列表
-
     avatar_path = None
-
     for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-
         if os.path.exists(f"img/{mid}_face{ext}"):
-
             avatar_path = f"img/{mid}_face{ext}"
-
             break
 
-    
 
     if avatar_path:
-
         try:
-
             avatar = Image.open(avatar_path)
-
             # 确保头像是RGBA模式以保留透明度
-
             if avatar.mode != 'RGBA':
-
                 avatar = avatar.convert('RGBA')
-
-            # 调整头像大小
-
+            # 调整头大小
             avatar_size = 100
-
             avatar = avatar.resize((avatar_size, avatar_size), Image.LANCZOS)
-
             images_to_show.append(('avatar', avatar))
-
         except Exception as e:
-
             print(f"加载头像失败: {e}")
 
 
-
     # 加载并添加头像框到列表
-
     pendant_path = None
-
     for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-
         if os.path.exists(f"img/{mid}_pendant{ext}"):
-
             pendant_path = f"img/{mid}_pendant{ext}"
-
             break
 
-    
-
     if pendant_path:
-
         try:
-
             pendant = Image.open(pendant_path)
-
             # 确保头像框是RGBA模式以保留透明度
-
             if pendant.mode != 'RGBA':
-
                 pendant = pendant.convert('RGBA')
-
             # 调整头像框大小
-
             pendant_size = 100
-
             pendant = pendant.resize((pendant_size, pendant_size), Image.LANCZOS)
-
             images_to_show.append(('pendant', pendant))
-
         except Exception as e:
-
             print(f"加载头像框失败: {e}")
 
 
-
     # 按顺序绘制图片（勋章、头像、头像框）- 每行显示最多3个图片
-
     images_per_row = 3
-
     for i in range(0, len(images_to_show), images_per_row):
-
         row_images = images_to_show[i:i+images_per_row]
-
         row_y = y_offset + 20 + (i // images_per_row) * 110  # 每行间距为110px，增加20px的顶部间距
 
-        
-
         # 计算该行图片的总宽度，以便居中
-
         total_width = len(row_images) * 100 + (len(row_images) - 1) * 20  # 每张图片100px，间距20px
-
         start_x = (width - total_width) // 2
-
         
 
         for j, (img_type, img_data) in enumerate(row_images):
-
             x_pos = start_x + j * 120  # 每张图片加上间距
-
-            
-
+        
             # 创建临时图像用于合成
-
             temp_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
-
             temp_img.paste(img_data, (x_pos, row_y), img_data)
-
             
-
             # 将图片合成到主图像
-
             img = Image.alpha_composite(img.convert('RGBA'), temp_img).convert('RGB')
-
             
-
             # 重新创建draw对象
-
             draw = ImageDraw.Draw(img)
 
 
 
     # 增加y_offset以容纳所有图片行
-
     rows_needed = (len(images_to_show) + images_per_row - 1) // images_per_row  # 向上取整
-
     y_offset += rows_needed * 110
 
-    
-
     # 如果有图片被加载，添加标题
-
     if images_to_show:
-
         # 绘制图片标题
-
         draw.text((width//2, y_offset + 10), " ", fill=(0, 0, 0), 
-
                   font=normal_font, anchor="mm")
-
         y_offset += 30
-    
         # 绘制统计数据区域（使用卡片式布局）
-
     stat_y = y_offset + 30  # 增加间距以避免重叠
-    
     # 统计数据背景 - 扩大边框
     stat_bg_color = (245, 245, 245)
     draw.rectangle([(30, stat_y), (width-30, stat_y+160)], 

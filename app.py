@@ -5,12 +5,15 @@ import requests
 import time
 from datetime import datetime
 from collections import deque
+import threading
 
 # 导入API模块
 from api.user_info import get_user_info_with_retry
 from api.relation_stat import get_relation_stat_with_retry
 from api.upstat import get_upstat_with_retry
-from draw_user_card import draw_user_card  # 新增导入
+from draw_user_card import draw_user_card
+from web_api import run_web_api  # 导入Web API启动函数
+from common import manage_query_history, delete_user_data  # 导入共享功能
 
 def load_cookie():
     """
@@ -82,6 +85,9 @@ def query_user_data(mid, headers):
     """
     print(f"\n开始查询用户 {mid} 的数据...")
     
+    # 管理查询历史记录
+    manage_query_history(mid)
+    
     # 1. 查询用户基本信息（带重试）
     print("1. 查询用户基本信息...")
     user_info = get_user_info_with_retry(mid, headers)
@@ -114,54 +120,14 @@ def query_user_data(mid, headers):
     print(f"\n用户 {mid} 的所有数据查询完成！")
     return True
 
-def delete_user_data(mid):
+def start_web_api():
     """
-    删除指定用户的所有数据
+    在单独线程中启动Web API服务
     """
-    # 删除JSON数据文件
-    data_file = f"data/{mid}_data.json"
-    if os.path.exists(data_file):
-        try:
-            os.remove(data_file)
-            print(f"已删除用户数据文件: {data_file}")
-        except Exception as e:
-            print(f"删除数据文件失败: {e}")
-    
-    # 删除图片文件
-    img_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
-    for ext in img_extensions:
-        img_file = f"img/{mid}_face{ext}"
-        if os.path.exists(img_file):
-            try:
-                os.remove(img_file)
-                print(f"已删除用户头像: {img_file}")
-            except Exception as e:
-                print(f"删除头像文件失败: {e}")
-        
-        img_file = f"img/{mid}_pendant{ext}"
-        if os.path.exists(img_file):
-            try:
-                os.remove(img_file)
-                print(f"已删除用户头像框: {img_file}")
-            except Exception as e:
-                print(f"删除头像框文件失败: {e}")
-        
-        img_file = f"img/{mid}_nameplate{ext}"
-        if os.path.exists(img_file):
-            try:
-                os.remove(img_file)
-                print(f"已删除用户勋章: {img_file}")
-            except Exception as e:
-                print(f"删除勋章文件失败: {e}")
-    
-    # 删除生成的用户卡片
-    card_file = f"output/{mid}.png"
-    if os.path.exists(card_file):
-        try:
-            os.remove(card_file)
-            print(f"已删除用户卡片: {card_file}")
-        except Exception as e:
-            print(f"删除用户卡片失败: {e}")
+    print("正在启动Web API服务...")
+    web_api_thread = threading.Thread(target=run_web_api, daemon=True)
+    web_api_thread.start()
+    print("Web API服务已启动在 http://127.0.0.1:12561")
 
 def main():
     """
@@ -170,6 +136,9 @@ def main():
     print("=" * 50)
     print("B站用户数据查询程序")
     print("=" * 50)
+    
+    # 启动Web API服务
+    start_web_api()
     
     # 查询历史记录，最多保存3个用户
     query_history = deque(maxlen=3)
@@ -181,6 +150,11 @@ def main():
     
     # 创建请求头
     headers = create_headers(cookie)
+    
+    print("\nWeb API服务已启动，您可以通过以下方式访问：")
+    print("  - 查询用户数据: http://127.0.0.1:12561/<mid>")
+    print("  - 获取用户卡片: http://127.0.0.1:12561/card/<mid>")
+    print("\n同时您也可以在此命令行界面继续查询用户：")
     
     while True:
         try:
@@ -198,22 +172,11 @@ def main():
             
             mid = int(mid_input)
             
-            # 检查是否是第四个查询，如果是则删除第一个查询的用户数据
-            if len(query_history) >= 3:
-                # 删除最早的用户数据
-                oldest_mid = query_history[0]
-                print(f"\n正在删除最早的用户数据 (MID: {oldest_mid})...")
-                delete_user_data(oldest_mid)
-            
             # 执行查询
             success = query_user_data(mid, headers)
             if not success:
                 print("部分或全部数据查询失败，请稍后重试")
                 continue
-            
-            # 添加到查询历史记录
-            query_history.append(mid)
-            print(f"查询历史: {list(query_history)}")
             
         except KeyboardInterrupt:
             print("\n\n程序被用户中断")
