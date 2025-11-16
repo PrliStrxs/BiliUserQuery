@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import time
+import sys
 from datetime import datetime
 from collections import deque
 import threading
@@ -129,29 +130,11 @@ def start_web_api():
     web_api_thread.start()
     print("Web API服务已启动在 http://127.0.0.1:12561")
 
-def main():
+def run_interactive_mode(headers):
     """
-    主程序
+    运行交互式命令行模式
     """
-    print("=" * 50)
-    print("B站用户数据查询程序")
-    print("=" * 50)
-    
-    # 启动Web API服务
-    start_web_api()
-    
-    # 查询历史记录，最多保存3个用户
-    query_history = deque(maxlen=3)
-    
-    # 加载Cookie
-    cookie = load_cookie()
-    if not cookie:
-        return
-    
-    # 创建请求头
-    headers = create_headers(cookie)
-    
-    print("\nWeb API服务已启动，您可以通过以下方式访问：")
+    print("\n交互式命令行模式已启动，您可以通过以下方式访问：")
     print("  - 查询用户数据: http://127.0.0.1:12561/<mid>")
     print("  - 获取用户卡片: http://127.0.0.1:12561/card/<mid>")
     print("\n同时您也可以在此命令行界面继续查询用户：")
@@ -181,8 +164,57 @@ def main():
         except KeyboardInterrupt:
             print("\n\n程序被用户中断")
             break
+        except EOFError:
+            # 当在后台运行时遇到EOF错误，退出交互模式
+            print("\n检测到非交互式环境，退出命令行模式，Web API服务继续运行...")
+            break
         except Exception as e:
             print(f"发生未知错误: {e}")
+
+def is_interactive_environment():
+    """
+    检查是否在交互式环境中运行
+    """
+    return sys.stdin.isatty()
+
+def main():
+    """
+    主程序
+    """
+    print("=" * 50)
+    print("B站用户数据查询程序")
+    print("=" * 50)
+    
+    # 启动Web API服务
+    start_web_api()
+    
+    # 加载Cookie
+    cookie = load_cookie()
+    if not cookie:
+        print("无法启动服务：Cookie加载失败")
+        return
+    
+    # 创建请求头
+    headers = create_headers(cookie)
+    
+    # 检查是否在交互式环境中
+    if is_interactive_environment():
+        # 交互式环境：启动命令行界面
+        run_interactive_mode(headers)
+    else:
+        # 非交互式环境：只启动Web API服务，不进入命令行循环
+        print("检测到非交互式环境，仅启动Web API服务")
+        print("Web API服务已启动，您可以通过以下方式访问：")
+        print("  - 查询用户数据: http://127.0.0.1:12561/<mid>")
+        print("  - 获取用户卡片: http://127.0.0.1:12561/card/<mid>")
+        print("\n程序将在后台持续运行...")
+        
+        # 保持主线程运行，防止程序退出
+        try:
+            while True:
+                time.sleep(60)  # 每分钟检查一次
+        except KeyboardInterrupt:
+            print("\n程序被用户中断")
             
 
 if __name__ == "__main__":
