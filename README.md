@@ -11,16 +11,20 @@
 - 数据以JSON格式保存到本地
 - 网络请求失败自动重试机制
 - 支持批量查询多个用户
+- 提供Web API接口，支持HTTP请求查询
+- 生成用户信息可视化卡片图片
 
 ## 环境要求
 
 - Python 3.6+
 - requests库
+- Pillow库
+- Flask库
 
 ## 安装依赖
 
 ```bash
-pip install requests
+pip install requests pillow flask
 ```
 
 ## 使用教程
@@ -48,13 +52,26 @@ buvid3=xxx; _uuid=xxx; SESSDATA=xxx; bili_jct=xxx
 python app.py
 ```
 
-程序运行后会提示输入B站用户MID（用户ID），输入后按回车开始查询：
+程序运行后会启动Web API服务并提示输入B站用户MID（用户ID），输入后按回车开始查询：
 
 ```
 请输入B站用户MID（输入'quit'退出）: 123456789
 ```
 
-查询完成后，数据会保存到`data/`目录下，图片会保存到`img/`目录下。
+## Web API使用说明
+
+程序启动后会自动启动Web API服务，运行在 `http://127.0.0.1:12561`
+
+### API接口
+
+- `GET /` - 获取API服务信息和使用说明
+- `GET /<mid>` - 查询指定MID的用户数据并返回JSON格式结果
+- `GET /card/<mid>` - 获取指定MID的用户信息卡片图片
+
+### API示例
+
+- 查询用户数据：`http://127.0.0.1:12561/2` - 查询MID为2的用户数据
+- 获取用户卡片：`http://127.0.0.1:12561/card/2` - 获取MID为2的用户信息卡片
 
 ## 输出文件说明
 
@@ -72,6 +89,12 @@ python app.py
   - `{用户ID}_face.xxx` - 用户头像
   - `{用户ID}_pendant.xxx` - 头像框
   - `{用户ID}_nameplate.xxx` - 勋章
+
+### 用户信息卡片
+
+- 位置：`output/{用户ID}.png`
+- 格式：PNG
+- 包含：用户头像、基本信息、统计数据等
 
 ## 数据字段说明
 
@@ -116,8 +139,10 @@ python app.py
 
 ```
 biliuserquery/
-├── app.py                 # 主程序入口
+├── app.py                 # 主程序入口，包含命令行和Web API启动
 ├── draw_user_card.py      # 用户信息卡片生成器
+├── web_api.py             # Web API服务实现
+├── common.py              # 公共功能模块（查询历史、数据删除等）
 ├── cookie.txt             # 存放B站Cookie信息
 ├── api/
 │   ├── __init__.py
@@ -125,6 +150,6 @@ biliuserquery/
 │   ├── relation_stat.py   # 关系统计API
 │   └── upstat.py          # UP主统计数据API
 ├── data/                  # 存放查询结果数据
-└── img/                   # 存放下载的用户图片
-```
-1
+├── img/                   # 存放下载的用户图片
+└── output/                # 存放生成的用户信息卡片
+```
