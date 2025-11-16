@@ -1,3 +1,4 @@
+# app.py (修改版本)
 import os
 import json
 import requests
@@ -8,6 +9,7 @@ from datetime import datetime
 from api.user_info import get_user_info_with_retry
 from api.relation_stat import get_relation_stat_with_retry
 from api.upstat import get_upstat_with_retry
+from draw_user_card import draw_user_card  # 新增导入
 
 def load_cookie():
     """
@@ -103,6 +105,10 @@ def query_user_data(mid, headers):
     # 4. 保存合并后的数据
     print("4. 保存数据...")
     save_combined_data(mid, user_info, relation_stat, upstat_data)
+    
+    # 5. 生成用户信息卡片
+    print("5. 生成用户信息卡片...")
+    draw_user_card(mid)
     
     print(f"\n用户 {mid} 的所有数据查询完成！")
     return True
