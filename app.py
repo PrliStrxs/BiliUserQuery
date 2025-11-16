@@ -4,6 +4,7 @@ import json
 import requests
 import time
 from datetime import datetime
+from collections import deque
 
 # 导入API模块
 from api.user_info import get_user_info_with_retry
@@ -113,6 +114,55 @@ def query_user_data(mid, headers):
     print(f"\n用户 {mid} 的所有数据查询完成！")
     return True
 
+def delete_user_data(mid):
+    """
+    删除指定用户的所有数据
+    """
+    # 删除JSON数据文件
+    data_file = f"data/{mid}_data.json"
+    if os.path.exists(data_file):
+        try:
+            os.remove(data_file)
+            print(f"已删除用户数据文件: {data_file}")
+        except Exception as e:
+            print(f"删除数据文件失败: {e}")
+    
+    # 删除图片文件
+    img_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    for ext in img_extensions:
+        img_file = f"img/{mid}_face{ext}"
+        if os.path.exists(img_file):
+            try:
+                os.remove(img_file)
+                print(f"已删除用户头像: {img_file}")
+            except Exception as e:
+                print(f"删除头像文件失败: {e}")
+        
+        img_file = f"img/{mid}_pendant{ext}"
+        if os.path.exists(img_file):
+            try:
+                os.remove(img_file)
+                print(f"已删除用户头像框: {img_file}")
+            except Exception as e:
+                print(f"删除头像框文件失败: {e}")
+        
+        img_file = f"img/{mid}_nameplate{ext}"
+        if os.path.exists(img_file):
+            try:
+                os.remove(img_file)
+                print(f"已删除用户勋章: {img_file}")
+            except Exception as e:
+                print(f"删除勋章文件失败: {e}")
+    
+    # 删除生成的用户卡片
+    card_file = f"output/{mid}.png"
+    if os.path.exists(card_file):
+        try:
+            os.remove(card_file)
+            print(f"已删除用户卡片: {card_file}")
+        except Exception as e:
+            print(f"删除用户卡片失败: {e}")
+
 def main():
     """
     主程序
@@ -120,6 +170,9 @@ def main():
     print("=" * 50)
     print("B站用户数据查询程序")
     print("=" * 50)
+    
+    # 查询历史记录，最多保存3个用户
+    query_history = deque(maxlen=3)
     
     # 加载Cookie
     cookie = load_cookie()
@@ -145,10 +198,22 @@ def main():
             
             mid = int(mid_input)
             
+            # 检查是否是第四个查询，如果是则删除第一个查询的用户数据
+            if len(query_history) >= 3:
+                # 删除最早的用户数据
+                oldest_mid = query_history[0]
+                print(f"\n正在删除最早的用户数据 (MID: {oldest_mid})...")
+                delete_user_data(oldest_mid)
+            
             # 执行查询
             success = query_user_data(mid, headers)
             if not success:
                 print("部分或全部数据查询失败，请稍后重试")
+                continue
+            
+            # 添加到查询历史记录
+            query_history.append(mid)
+            print(f"查询历史: {list(query_history)}")
             
         except KeyboardInterrupt:
             print("\n\n程序被用户中断")

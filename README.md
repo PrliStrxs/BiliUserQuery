@@ -11,11 +11,23 @@
 - 数据以JSON格式保存到本地
 - 网络请求失败自动重试机制
 - 支持批量查询多个用户
+- 生成用户信息卡片图片
+- 自动管理查询历史，最多保留3个用户数据
+- 自动删除旧用户数据以节省存储空间
 
-## 环境要求
+## 依赖与配置
 
-- Python 3.6+
-- requests库
+程序依赖以下Python库：
+- `requests` - 用于HTTP请求
+- `json` - 用于JSON数据处理
+- `PIL` (Pillow) - 用于图像处理和生成信息卡片
+- `os`, `time`, `datetime` - 标准库
+
+安装依赖：
+
+```bash
+pip install requests pillow
+```
 
 ## 安装依赖
 
@@ -42,13 +54,11 @@ pip install requests
 buvid3=xxx; _uuid=xxx; SESSDATA=xxx; bili_jct=xxx
 ```
 
-### 3. 运行程序
+### 3. 运行主程序
 
 ```bash
 python app.py
 ```
-
-### 4. 查询用户数据
 
 程序运行后会提示输入B站用户MID（用户ID），输入后按回车开始查询：
 
@@ -57,6 +67,25 @@ python app.py
 ```
 
 查询完成后，数据会保存到`data/`目录下，图片会保存到`img/`目录下。
+
+### 4. 查询历史与数据管理
+
+程序会自动管理查询历史，最多保留3个用户的数据：
+- 当查询第4个用户时，会自动删除最早查询的用户数据
+- 当查询第5个用户时，会自动删除第2个查询的用户数据
+- 以此类推...
+
+这样可以有效控制存储空间的使用，同时保留最近查询的用户数据。
+
+### 5. 生成用户信息卡片
+
+运行用户信息卡片生成器：
+
+```bash
+python draw_user_card.py
+```
+
+同样会提示输入B站用户MID，生成的信息卡片会保存到`output/`目录下。卡片包含用户的基本信息、统计数据以及徽章、头像、头像框等图片。
 
 ## 输出文件说明
 
@@ -119,12 +148,15 @@ python app.py
 ```
 biliuserquery/
 ├── app.py                 # 主程序入口
+├── draw_user_card.py      # 用户信息卡片生成器
 ├── cookie.txt             # 存放B站Cookie信息
 ├── api/
 │   ├── __init__.py
 │   ├── user_info.py       # 用户信息API
 │   ├── relation_stat.py   # 关系统计API
 │   └── upstat.py          # UP主统计数据API
-├── data/                  # 存放查询结果数据
-└── img/                   # 存放下载的用户图片
+├── data/                  # 存放查询结果数据（最多保留3个用户）
+├── img/                   # 存放下载的用户图片（最多保留3个用户）
+├── output/                # 存放生成的用户信息卡片（最多保留3个用户）
+└── README.md              # 项目说明文档
 ```
